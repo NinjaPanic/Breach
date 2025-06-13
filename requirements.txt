@@ -1,0 +1,4 @@
+pyinstaller
+pystyle
+mss
+opencv-python
