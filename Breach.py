@@ -32,7 +32,6 @@ listCommand = """
 - Kill PID or NAME : terminates a process by name or ID.
 - Restart : restarts the client.
 - Stop : shuts down the client.
-- Change : switches to another active client.
 - ListID : shows the list of connected clients.
 - Cam NUMBER : aptures an image from the specified webcam (start at 0).
 - Screen NUMBER : captures the display of the specified screen (start at 1).
